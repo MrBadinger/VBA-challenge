@@ -1,0 +1,186 @@
+Sub VBA_Challenge()
+
+'Worksheet Loop
+Dim ws As Integer
+ws = Application.Sheets.Count
+
+For w = 1 To ws
+Worksheets(w).Activate
+
+
+        '----------------------------
+        'Creating output row headers
+        '----------------------------
+        
+        Range("I1").Value = "Ticker"
+        Range("J1").Value = "Yearly Change"
+        Range("K1").Value = "Percent Change"
+        Range("L1").Value = "Total Stock Volume"
+        Range("P1").Value = "Ticker"
+        Range("Q1").Value = "Value"
+        Range("O2").Value = "Greatest % Increase"
+        Range("O3").Value = "Greatest % Decrease"
+        Range("O4").Value = "Greatest Total Volume"
+        '==========================================
+        
+        'Setting up variable
+        Dim Ticker As String
+        Dim Change As Double
+        Dim P_Change As Double
+        Dim T_Vol As LongLong
+        Dim Output_Table_Position As Integer
+        Dim lastRow As Long
+        Dim Open_Price As Double
+        Dim Close_Price As Double
+        
+        'used to keep track of the location in the summary table
+        Output_Table_Position = 2
+        
+        'used to determin the last row in column A
+        lastRow = Cells(Rows.Count, 1).End(xlUp).Row
+            'MsgBox (lastRow)
+            
+        
+        'setting up values
+        T_Vol = 0
+        Open_Price = Cells(2, 3).Value
+        Close_Price = 0
+        Change = Close_Price - Open_Price
+        P_Change = Change / Open_Price
+        
+        
+        'start the loop through the tickers
+        For a = 2 To lastRow
+            
+            'checks to see if current cell does not equal the cell in the next row
+            If Cells(a + 1, 1).Value <> Cells(a, 1).Value Then
+                'adds ticker information to output table
+                Ticker = Cells(a, 1).Value
+                Range("I" & Output_Table_Position).Value = Ticker
+                
+                'Adds total stock volumn information to output table, and resets counter for next ticker
+                T_Vol = T_Vol + Cells(a, 7).Value
+                Range("L" & Output_Table_Position).Value = T_Vol
+                T_Vol = 0
+                
+                'Captures closing price of final day, calculates and adds numerical and percent change in stock price over a year to the output table, and lastly updates the opening stock price for the next unique ticker
+                Close_Price = Cells(a, 6).Value
+                Change = Close_Price - Open_Price
+                
+                    'Error checking for the event that a ticker has zero volume for a whole year (aka PLNT)
+                    If Close_Price = 0 Or Open_Price = 0 Then
+                        P_Change = 0
+                    Else
+                        P_Change = Change / Open_Price
+                    End If
+                    
+                
+                Range("J" & Output_Table_Position).Value = Change
+                Range("K" & Output_Table_Position).Value = P_Change
+                
+                Open_Price = Cells(a + 1, 3).Value
+                
+                
+                'Moves to next row on output table
+                Output_Table_Position = Output_Table_Position + 1
+                
+            'If cell below is the same as current cell it will collect and store the information on the current row
+            Else
+                T_Vol = T_Vol + Cells(a, 7).Value
+                
+            
+            End If
+            
+        Next a
+        
+        '=========================
+        'Greatest Table
+        'Scan through the output table and add the greatest values to the great table
+        '=========================
+        Dim Great_Increase As Double
+        Dim Great_Decrease As Double
+        Dim Great_Volume As LongLong
+        Dim Position As LongLong
+        
+        Dim Tick_Great_Increase As String
+        Dim Tick_Great_Decrease As String
+        Dim Tick_Great_Volume As String
+        
+        Great_Increase = Range("K2").Value
+        Great_Decrease = Range("K2").Value
+        Great_Volume = 0
+        
+        'determins the last row in the output table
+        Position = Cells(Rows.Count, 9).End(xlUp).Row
+        
+        'scans through output table...
+        For b = 2 To Position
+        
+            'finds the value of Greatest % Increase
+            If Cells(b, 11).Value > Great_Increase Then
+                Great_Increase = Cells(b, 11).Value
+                Tick_Great_Increase = Cells(b, 9).Value
+                
+            'finds the value of Greatest % Decrease
+            ElseIf Cells(b, 11).Value < Great_Decrease Then
+                Great_Decrease = Cells(b, 11).Value
+                Tick_Great_Decrease = Cells(b, 9).Value
+            End If
+            
+            'Finds the the value of Greatest Total Volume
+            If Cells(b, 12).Value > Great_Volume Then
+                Great_Volume = Cells(b, 12).Value
+                Tick_Great_Volume = Cells(b, 9).Value
+            End If
+        
+        Next b
+        
+        'Inputs the the stored values in the Greatest Table
+        Range("P2").Value = Tick_Great_Increase
+        Range("Q2").Value = Great_Increase
+        Range("P3").Value = Tick_Great_Decrease
+        Range("Q3").Value = Great_Decrease
+        Range("P4").Value = Tick_Great_Volume
+        Range("Q4").Value = Great_Volume
+        
+        
+        '=========================
+        'Output Table formatting
+        '=========================
+        Dim LastRow_Table As LongLong
+        
+        LastRow_Table = Cells(Rows.Count, 9).End(xlUp).Row
+        
+        'Changes Percent Change column to 0.00% format
+        Range("K2:K" & LastRow_Table).NumberFormat = "0.00%"
+            
+        'Changes Volume to comma format
+        Range("L2:L" & LastRow_Table).NumberFormat = "_(* #,##0_);_(* (#,##0);_(* ""-""??_);_(@_)"
+        
+        'Changes Percent Change column to 0.00% format
+        Range("Q2:Q3").NumberFormat = "0.00%"
+            
+        'Changes Volume to comma format
+        Range("Q4").NumberFormat = "_(* #,##0_);_(* (#,##0);_(* ""-""??_);_(@_)"
+        
+        
+        For c = 2 To LastRow_Table
+            
+            'Adds color formatting to Yearly Change column of Output Table
+            If Cells(c, 10).Value < 0 Then
+                Cells(c, 10).Interior.ColorIndex = 3
+            ElseIf Cells(c, 10).Value > 0 Then
+                Cells(c, 10).Interior.ColorIndex = 4
+            ElseIf Cells(c, 10).Value = 0 Then
+                Cells(c, 10).Interior.ColorIndex = 6
+            End If
+            
+        Next c
+            
+        'Make columns fit to size
+        Columns("A:Z").EntireColumn.AutoFit
+
+Next w
+
+
+End Sub
